@@ -1,0 +1,10 @@
+@dp.message_handler()
+async def echo_handler(message):
+    await message.answer("Ask me here -> https://chatgpt.com/")
+
+
+
+    @dp.message_handler()
+async def echo_handler(message: types.Message):
+    text = message.text
+    await message.answer(text)
