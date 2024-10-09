@@ -2,7 +2,7 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-import buttons  # Предполагается, что у вас есть кнопки
+import buttons 
 
 class FSMStore(StatesGroup):
     product_name = State()
@@ -19,7 +19,7 @@ async def start_fsm(message: types.Message):
 async def load_product_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['product_name'] = message.text
-    await message.answer('Выберите размер:', reply_markup=buttons.sizes)  # Кнопки с размерами
+    await message.answer('Выберите размер:', reply_markup=buttons.sizes)  
     await FSMStore.size.set()
 
 async def load_size(message: types.Message, state: FSMContext):
@@ -37,21 +37,21 @@ async def load_category(message: types.Message, state: FSMContext):
 async def load_price(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['price'] = message.text
-    await message.answer('Отправьте фото товара:', reply_markup=buttons.cancel)  # Кнопка для отмены
+    await message.answer('Отправьте фото товара:', reply_markup=buttons.cancel) 
     await FSMStore.photo.set()
 
 async def load_photo(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['photo'] = message.photo[-1].file_id
 
-    # Подтверждение данных
+   
     await message.answer('Вот ваши данные:\n'
                          f'Название товара: {data["product_name"]}\n'
                          f'Размер: {data["size"]}\n'
                          f'Категория: {data["category"]}\n'
                          f'Стоимость: {data["price"]}\n')
     await message.answer_photo(photo=data['photo'], caption='Подтвердите данные: "Верные ли данные?"',
-                               reply_markup=buttons.confirmation)  # Кнопки "Да" и "Нет"
+                               reply_markup=buttons.confirmation)  "
     await FSMStore.confirmation.set()
 
 async def confirm_data(message: types.Message, state: FSMContext):
