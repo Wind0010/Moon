@@ -1,0 +1,18 @@
+#Создание таблицы collection_products
+CREATE TABLE collection_products (
+    id SERIAL PRIMARY KEY,
+    productid INT NOT NULL,
+    collection VARCHAR(255) NOT NULL
+);
+# Добавление стадии collection в FSM
+class MyStateMachine:
+    def __init__(self):
+        self.state = 'initial'
+
+    def transition_to_collection(self):
+        self.state = 'collection'
+
+fsm = MyStateMachine()
+fsm.transition_to_collection()
+№ Запись в таблицу collection_products
+INSERT INTO collection_products (productid, collection) VALUES (123, 'My Collection');
