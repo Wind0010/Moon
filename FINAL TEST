@@ -4,7 +4,7 @@ __pycache__/
 *.pyc
 .env
 
-STAFF = ['staff_user1', 'staff_user2']  # Замените на реальные username сотрудников
+STAFF = ['staff_user1', 'staff_user2']  
 TOKEN = '7515122791:AAFk0wiyNP_LWWfPKQ9Luf-JC-9gyDYWxBU'  
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
