@@ -1,0 +1,187 @@
+#.gitignore
+.idea/
+__pycache__/
+*.pyc
+.env
+
+STAFF = ['staff_user1', 'staff_user2']  # Замените на реальные username сотрудников
+TOKEN = '7515122791:AAFk0wiyNP_LWWfPKQ9Luf-JC-9gyDYWxBU'  
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher import filters
+from aiogram.utils import executor
+from config import TOKEN, STAFF
+
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot, storage=MemoryStorage())
+
+@dp.message_handler(commands=['start'])
+async def start_command(message: types.Message):
+    await message.reply("Добро пожаловать! Я бот для управления товарами.")
+@dp.message_handler(commands=['info'])
+async def info_command(message: types.Message):
+    await message.reply("Я бот, который помогает управлять товарами и заказами.")
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher import State, StatesGroup
+from aiogram.utils import executor
+import sqlite3
+from config import TOKEN, STAFF
+
+# Инициализация бота и диспетчера
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot, storage=MemoryStorage())
+
+# Подключение к базе данных SQLite
+conn = sqlite3.connect('products.db')
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS products
+             (name TEXT, category TEXT, size TEXT, price REAL, article TEXT, photo TEXT)''')
+
+class ProductForm(StatesGroup):
+    name = State()
+    category = State()
+    size = State()
+    price = State()
+    article = State()
+    photo = State()
+
+@dp.message_handler(commands=['add_product'], user_id=STAFF)
+async def add_product_command(message: types.Message):
+    await ProductForm.name.set()
+    await message.reply("Введите название продукта:")
+
+@dp.message_handler(state=ProductForm.name)
+async def process_name(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await ProductForm.next()
+    await message.reply("Введите категорию:")
+
+@dp.message_handler(state=ProductForm.category)
+async def process_category(message: types.Message, state: FSMContext):
+    await state.update_data(category=message.text)
+    await ProductForm.next()
+    await message.reply("Введите размер:")
+
+@dp.message_handler(state=ProductForm.size)
+async def process_size(message: types.Message, state: FSMContext):
+    await state.update_data(size=message.text)
+    await ProductForm.next()
+    await message.reply("Введите цену:")
+
+@dp.message_handler(state=ProductForm.price)
+async def process_price(message: types.Message, state: FSMContext):
+    await state.update_data(price=float(message.text))
+    await ProductForm.next()
+    await message.reply("Введите артикул:")
+
+@dp.message_handler(state=ProductForm.article)
+async def process_article(message: types.Message, state: FSMContext):
+    await state.update_data(article=message.text)
+    await ProductForm.next()
+    await message.reply("Отправьте фото товара (прикрепите файл):")
+
+@dp.message_handler(content_types=['photo'], state=ProductForm.photo)
+async def process_photo(message: types.Message, state: FSMContext):
+    file_id = message.photo[-1].file_id 
+    await state.update_data(photo=file_id)
+    
+    # Сохраняем данные в БД
+    data = await state.get_data()
+    c.execute("INSERT INTO products VALUES (?, ?, ?, ?, ?, ?)",
+              (data['name'], data['category'], data['size'], data['price'], data['article'], data['photo']))
+    conn.commit()
+
+    await message.reply("Товар успешно добавлен!")
+    await state.finish()
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
+import sqlite3
+
+conn = sqlite3.connect('products.db')
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS products
+             (name TEXT, category TEXT, size TEXT, price REAL, article TEXT, photo TEXT)''')
+
+async def save_product(data):
+    c.execute("INSERT INTO products VALUES (?, ?, ?, ?, ?, ?)",
+              (data['name'], data['category'], data['size'], data['price'], data['article'], data['photo']))
+    conn.commit()
+@dp.message_handler(commands=['products'])
+async def products_command(message: types.Message):
+    c.execute("SELECT * FROM products")
+    products = c.fetchall()
+    response = "\n".join([f"Название: {p[0]}, Категория: {p[1]}, Размер: {p[2]}, Цена: {p[3]}, Артикул: {p[4]}, Фото: {p[5]}" for p in products])
+    await message.reply(response or "Нет товаров.")
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher import State, StatesGroup
+from aiogram.utils import executor
+from config import TOKEN, STAFF
+
+# Инициализация бота и диспетчера
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot, storage=MemoryStorage())
+
+class OrderForm(StatesGroup):
+    article = State()
+    size = State()
+    quantity = State()
+    contact = State()
+
+@dp.message_handler(commands=['order'])
+async def order_command(message: types.Message):
+    await OrderForm.article.set()
+    await message.reply("Введите артикул товара:")
+
+@dp.message_handler(state=OrderForm.article)
+async def process_article(message: types.Message, state: FSMContext):
+    await state.update_data(article=message.text)
+    await OrderForm.next()
+    await message.reply("Введите размер:")
+
+@dp.message_handler(state=OrderForm.size)
+async def process_size(message: types.Message, state: FSMContext):
+    await state.update_data(size=message.text)
+    await OrderForm.next()
+    await message.reply("Введите количество:")
+
+@dp.message_handler(state=OrderForm.quantity)
+async def process_quantity(message: types.Message, state: FSMContext):
+    await state.update_data(quantity=int(message.text))
+    await OrderForm.next()
+    await message.reply("Введите свои контактные данные (номер телефона):")
+
+@dp.message_handler(state=OrderForm.contact)
+async def process_contact(message: types.Message, state: FSMContext):
+    await state.update_data(contact=message.text)
+    
+    # Получаем данные заказа
+    order_data = await state.get_data()
+    order_message = (f"Новый заказ:\n"
+                     f"Артикул: {order_data['article']}\n"
+                     f"Размер: {order_data['size']}\n"
+                     f"Количество: {order_data['quantity']}\n"
+                     f"Контактные данные: {order_data['contact']}")
+
+    # Отправляем заказ сотрудникам
+    await send_order_to_staff(order_message)
+
+    await message.reply("Ваш заказ успешно оформлен!")
+    await state.finish()
+
+async def send_order_to_staff(order_message):
+    for staff_member in STAFF:
+        await bot.send_message(staff_member, order_message)
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
+async def send_order_to_staff(order_data):
+    for staff_member in STAFF:
+        await bot.send_message(staff_member, f"Новый заказ: {order_data}")
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
